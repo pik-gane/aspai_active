@@ -190,12 +190,21 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
     # Triangle vertices for plotting
     triangle = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2]])
     
+    # Calculate adaptive marker size and alpha based on number of query points
+    # Start with markersize=8, alpha=0.7 at N=10, decrease as N grows
+    n_points = len(X_train_tensor)
+    base_markersize = 8
+    base_alpha = 0.7
+    # Reduce size and alpha logarithmically with N
+    markersize = max(1, base_markersize * (10 / n_points) ** 0.5)
+    alpha = max(0.1, base_alpha * (10 / n_points) ** 0.3)
+    
     # Plot 1: True function
     ax = axes[0]
     scatter = ax.scatter(coords_2d[:, 0], coords_2d[:, 1], 
                         c=true_values, cmap='RdYlBu_r', s=20, alpha=0.6,
                         vmin=0, vmax=1)
-    ax.plot(*train_coords_2d.T, 'k.', markersize=8, alpha=0.7, label='Query points')
+    ax.plot(*train_coords_2d.T, 'k.', markersize=markersize, alpha=alpha, label='Query points')
     ax.add_patch(Polygon(triangle, fill=False, edgecolor='black', linewidth=2))
     ax.set_xlim(-0.1, 1.1)
     ax.set_ylim(-0.1, 1.0)
@@ -215,7 +224,7 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
     scatter = ax.scatter(coords_2d[:, 0], coords_2d[:, 1], 
                         c=pred_values, cmap='RdYlBu_r', s=20, alpha=0.6,
                         vmin=0, vmax=1)
-    ax.plot(*train_coords_2d.T, 'k.', markersize=8, alpha=0.7, label='Query points')
+    ax.plot(*train_coords_2d.T, 'k.', markersize=markersize, alpha=alpha, label='Query points')
     ax.add_patch(Polygon(triangle, fill=False, edgecolor='black', linewidth=2))
     ax.set_xlim(-0.1, 1.1)
     ax.set_ylim(-0.1, 1.0)
@@ -243,7 +252,7 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
     scatter = ax.scatter(coords_2d[:, 0], coords_2d[:, 1], 
                         c=colors, cmap='RdYlGn', s=20, alpha=0.6,
                         vmin=0, vmax=1)
-    ax.plot(*train_coords_2d.T, 'k.', markersize=8, alpha=0.7, label='Query points')
+    ax.plot(*train_coords_2d.T, 'k.', markersize=markersize, alpha=alpha, label='Query points')
     ax.add_patch(Polygon(triangle, fill=False, edgecolor='black', linewidth=2))
     ax.set_xlim(-0.1, 1.1)
     ax.set_ylim(-0.1, 1.0)
