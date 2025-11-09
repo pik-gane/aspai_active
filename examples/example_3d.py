@@ -45,7 +45,7 @@ class SmoothStepFunction:
         self.normal = self.normal / np.linalg.norm(self.normal)
         
         # Smoothness parameter (controls steepness of sigmoid)
-        self.smoothness = np.random.uniform(0, 0.1)
+        self.smoothness = np.random.uniform(0.1, 0.2)
         
     def __call__(self, x):
         """
@@ -360,7 +360,7 @@ def visualize_results(learner, true_function, results, save_path='results.png'):
 
 def run_active_learning_with_video(learner, true_function, n_iterations=40, 
                                    n_candidates=1000, n_initial=10, 
-                                   n_oracle_queries=3, retrain_epochs=50,
+                                   n_oracle_queries=1, retrain_epochs=50,
                                    video_path='progress.mp4', fps=2, verbose=True):
     """
     Run active learning loop and generate video of progress.
@@ -513,10 +513,10 @@ def main():
     results = run_active_learning_with_video(
         learner=learner,
         true_function=true_function,
-        n_iterations=40,
+        n_iterations=100,
         n_candidates=1000,
         n_initial=10,
-        n_oracle_queries=3,
+        n_oracle_queries=1,
         retrain_epochs=50,
         video_path='example_progress.mp4',
         fps=2,
