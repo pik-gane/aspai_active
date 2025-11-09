@@ -124,7 +124,7 @@ def create_oracle(true_function):
     return oracle
 
 
-def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, axes=None):
+def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, axes=None, colorbars=None):
     """
     Create a single frame for the video showing current state.
     
@@ -135,9 +135,10 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
         iteration: Current iteration number
         fig: Optional existing figure to reuse
         axes: Optional existing axes to reuse
+        colorbars: Optional existing colorbars to reuse
         
     Returns:
-        fig, axes, metrics_dict
+        fig, axes, colorbars, metrics_dict
     """
     # Create a fine grid for visualization
     n_grid = 50
@@ -176,6 +177,12 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
     # Create or clear figure
     if fig is None:
         fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+        colorbars = [None, None, None]
+    elif colorbars is None:
+        # If figure exists but colorbars were not passed, initialize them
+        colorbars = [None, None, None]
+        for ax in axes:
+            ax.clear()
     else:
         for ax in axes:
             ax.clear()
@@ -195,7 +202,12 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
     ax.set_aspect('equal')
     ax.set_title(f'True Function f(x)\nIteration {iteration}', fontsize=14, fontweight='bold')
     ax.legend(loc='upper right')
-    cbar = plt.colorbar(scatter, ax=ax, label='f(x)')
+    
+    # Create or update colorbar
+    if colorbars[0] is None:
+        colorbars[0] = plt.colorbar(scatter, ax=ax, label='f(x)')
+    else:
+        colorbars[0].update_normal(scatter)
     ax.axis('off')
     
     # Plot 2: Estimated function
@@ -210,7 +222,12 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
     ax.set_aspect('equal')
     ax.set_title(f'Estimated Function\nQueries: {len(X_train_tensor)}', fontsize=14, fontweight='bold')
     ax.legend(loc='upper right')
-    cbar = plt.colorbar(scatter, ax=ax, label='Predicted f(x)')
+    
+    # Create or update colorbar
+    if colorbars[1] is None:
+        colorbars[1] = plt.colorbar(scatter, ax=ax, label='Predicted f(x)')
+    else:
+        colorbars[1].update_normal(scatter)
     ax.axis('off')
     
     # Plot 3: Classification with metrics
@@ -241,14 +258,17 @@ def create_frame(learner, true_function, X_train_tensor, iteration, fig=None, ax
     ax.set_title('Classification A = {x: f(x) > 0.5}', fontsize=14, fontweight='bold')
     ax.legend(loc='upper right')
     
-    # Custom colorbar labels
-    cbar = plt.colorbar(scatter, ax=ax, ticks=[0, 0.25, 0.5, 0.75, 1.0])
-    cbar.ax.set_yticklabels(['FN', 'FP', 'TN', '', 'TP'])
+    # Create or update colorbar
+    if colorbars[2] is None:
+        colorbars[2] = plt.colorbar(scatter, ax=ax, ticks=[0, 0.25, 0.5, 0.75, 1.0])
+        colorbars[2].ax.set_yticklabels(['FN', 'FP', 'TN', '', 'TP'])
+    else:
+        colorbars[2].update_normal(scatter)
     ax.axis('off')
     
     plt.tight_layout()
     
-    return fig, axes, metrics
+    return fig, axes, colorbars, metrics
 
 
 def visualize_results(learner, true_function, results, save_path='results.png'):
@@ -384,6 +404,7 @@ def run_active_learning_with_video(learner, true_function, n_iterations=40,
     
     # Initialize video writer
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    colorbars = None
     writer = FFMpegWriter(fps=fps, metadata=dict(artist='aspai_active'))
     writer.setup(fig, video_path, dpi=150)
     
@@ -408,7 +429,7 @@ def run_active_learning_with_video(learner, true_function, n_iterations=40,
     learner.ensemble.train_step(X_train_tensor, y_train_tensor, n_epochs=100)
     
     # Create first frame (after initial training)
-    fig, axes, metrics = create_frame(learner, true_function, X_train_tensor, 0, fig, axes)
+    fig, axes, colorbars, metrics = create_frame(learner, true_function, X_train_tensor, 0, fig, axes, colorbars)
     writer.grab_frame()
     
     if verbose:
@@ -444,8 +465,8 @@ def run_active_learning_with_video(learner, true_function, n_iterations=40,
         learner.ensemble.train_step(X_train_tensor, y_train_tensor, n_epochs=retrain_epochs)
         
         # Create frame for this iteration
-        fig, axes, metrics = create_frame(learner, true_function, X_train_tensor, 
-                                         iteration + 1, fig, axes)
+        fig, axes, colorbars, metrics = create_frame(learner, true_function, X_train_tensor, 
+                                         iteration + 1, fig, axes, colorbars)
         writer.grab_frame()
         
         if verbose:
