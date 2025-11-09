@@ -9,14 +9,14 @@ import numpy as np
 def sample_simplex(n_samples, d, device="cpu"):
     """
     Sample uniformly from the probability simplex S_d.
-    
+
     Uses the method of sampling from a Dirichlet(1, ..., 1) distribution.
-    
+
     Args:
         n_samples: Number of samples to generate
         d: Dimension of the simplex (number of points)
         device: Torch device to use
-        
+
     Returns:
         torch.Tensor of shape (n_samples, d) with each row summing to 1
     """
@@ -28,10 +28,10 @@ def sample_simplex(n_samples, d, device="cpu"):
 def project_to_simplex(x):
     """
     Project points onto the probability simplex.
-    
+
     Args:
         x: torch.Tensor of shape (n, d)
-        
+
     Returns:
         torch.Tensor of shape (n, d) projected onto the simplex
     """
@@ -47,14 +47,14 @@ def project_to_simplex(x):
 def grid_simplex(n_per_dim, d, device="cpu"):
     """
     Create a grid of points on the probability simplex for d=3 (triangle).
-    
+
     For d=3, creates a triangular grid. For d>3, uses random sampling.
-    
+
     Args:
         n_per_dim: Number of points per dimension
         d: Dimension of the simplex
         device: Torch device to use
-        
+
     Returns:
         torch.Tensor of shape (n_points, d)
     """
@@ -70,29 +70,29 @@ def grid_simplex(n_per_dim, d, device="cpu"):
         return torch.stack(points).to(device)
     else:
         # For higher dimensions, use uniform sampling
-        return sample_simplex(n_per_dim ** 2, d, device)
+        return sample_simplex(n_per_dim**2, d, device)
 
 
 def barycentric_to_cartesian(points):
     """
     Convert barycentric coordinates (3D simplex) to 2D Cartesian for plotting.
-    
+
     Args:
         points: torch.Tensor or numpy.ndarray of shape (n, 3) with barycentric coords
-        
+
     Returns:
         numpy.ndarray of shape (n, 2) with Cartesian coordinates
     """
     if torch.is_tensor(points):
         points = points.detach().cpu().numpy()
-    
+
     # Standard triangle vertices in 2D
     v1 = np.array([0.0, 0.0])
     v2 = np.array([1.0, 0.0])
     v3 = np.array([0.5, np.sqrt(3) / 2])
-    
+
     # Convert barycentric to cartesian
     x = points[:, 0:1] * v1[0] + points[:, 1:2] * v2[0] + points[:, 2:3] * v3[0]
     y = points[:, 0:1] * v1[1] + points[:, 1:2] * v2[1] + points[:, 2:3] * v3[1]
-    
+
     return np.hstack([x, y])
