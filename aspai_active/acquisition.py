@@ -44,6 +44,9 @@ def bald_acquisition(predictions):
     # BALD score = mutual information
     bald_scores = predictive_entropy - expected_entropy
 
+    # Handle any remaining NaN or inf values by replacing with 0
+    bald_scores = torch.nan_to_num(bald_scores, nan=0.0, posinf=0.0, neginf=0.0)
+
     return bald_scores
 
 

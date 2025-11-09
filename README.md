@@ -111,7 +111,8 @@ python example_3d.py
 This will:
 1. Create a synthetic function as a sum of 5 smooth step functions
 2. Run active learning with BALD acquisition
-3. Generate visualizations showing:
+3. Generate an MP4 video (`example_progress.mp4`) showing the learning progress with one frame per query
+4. Generate a final visualization image (`example_results.png`) showing:
    - True function values
    - Estimated function values
    - Classification accuracy for $A = \{x : f(x) > 0.5\}$
@@ -119,10 +120,17 @@ This will:
 
 #### Example Output
 
-The example produces a visualization with three panels:
-- **Left**: True function $f(x)$ on the simplex
-- **Middle**: Learned function estimate
-- **Right**: Classification correctness (TP/TN/FP/FN)
+The example produces:
+
+1. **Video** (`example_progress.mp4`): An animated visualization showing learning progress
+   - One frame per query iteration
+   - Three panels showing true function, estimated function, and classification
+   - Fitness metrics displayed on each frame: TP (True Positives), TN (True Negatives), FP (False Positives), FN (False Negatives), and Accuracy
+   
+2. **Image** (`example_results.png`): A final visualization with three panels:
+   - **Left**: True function $f(x)$ on the simplex
+   - **Middle**: Learned function estimate
+   - **Right**: Classification correctness (TP/TN/FP/FN)
 
 All query points are shown as black dots.
 
