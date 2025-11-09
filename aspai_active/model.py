@@ -73,7 +73,7 @@ class EnsembleModel:
         
         # Create optimizers for each model
         self.optimizers = [
-            torch.optim.Adam(model.parameters(), lr=0.001)
+            torch.optim.Adam(model.parameters(), lr=0.01)
             for model in self.models
         ]
         
@@ -143,3 +143,27 @@ class EnsembleModel:
         """
         predictions = self.predict_proba(x, n_samples=1)
         return predictions.mean(dim=0)
+    
+    def predict_deterministic(self, x):
+        """
+        Predict mean probability across the ensemble without dropout.
+        Use this for visualization and final predictions.
+        
+        Args:
+            x: Input tensor of shape (n_points, input_dim)
+            
+        Returns:
+            Mean probabilities of shape (n_points,)
+        """
+        x = x.to(self.device)
+        predictions = []
+        
+        for model in self.models:
+            model.eval()  # Disable dropout for deterministic predictions
+            
+            with torch.no_grad():
+                logits = model(x)
+                probs = torch.sigmoid(logits).squeeze(-1)
+                predictions.append(probs.cpu())
+        
+        return torch.stack(predictions).mean(dim=0)
