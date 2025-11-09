@@ -44,7 +44,7 @@ class SmoothStepFunction:
         self.normal = self.normal / np.linalg.norm(self.normal)
         
         # Smoothness parameter (controls steepness of sigmoid)
-        self.smoothness = np.random.uniform(5, 15)
+        self.smoothness = np.random.uniform(0, 0.1)
         
     def __call__(self, x):
         """
@@ -63,7 +63,7 @@ class SmoothStepFunction:
             dist = np.dot(x - self.point, self.normal)
         
         # Apply smooth step (expit = logistic sigmoid)
-        return expit(self.smoothness * dist)
+        return expit(dist / self.smoothness)
 
 
 class SumOfSteps:
@@ -239,9 +239,10 @@ def main():
     print("=" * 60)
     
     # Set random seed for reproducibility
-    seed = 42
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+    seed = None #42
+    if seed:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
     
     # Problem setup
     d = 3  # Dimension of simplex
