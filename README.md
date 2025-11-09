@@ -73,17 +73,35 @@ results = learner.run(
     verbose=True
 )
 
+# For high dimensions, enable gradient descent optimization
+# This improves candidate selection by optimizing points toward high acquisition values
+results = learner.run(
+    n_iterations=50,
+    n_candidates=1000,
+    n_initial=20,
+    n_oracle_queries=3,
+    optimize_candidates=True,  # Enable gradient descent optimization
+    gd_steps=20,              # Number of optimization steps
+    gd_lr=0.05,               # Learning rate
+    gd_top_k_fraction=0.2,    # Optimize top 20% of candidates
+    verbose=True
+)
+
 # Make predictions
 from aspai_active import sample_simplex
 test_points = sample_simplex(100, d=10)
 predictions = learner.predict(test_points)
 ```
 
-## Example Application
+## Example Applications
 
-The package includes a complete example with `d=3` (for visualization) where the true function is a sum of 5 smooth step functions along random hyperplanes.
+The package includes two complete examples:
 
-### Running the Example
+### 3D Example (Visualization)
+
+Example with `d=3` for visualization where the true function is a sum of 5 smooth step functions along random hyperplanes.
+
+#### Running the Example
 
 ```bash
 cd examples
@@ -100,7 +118,7 @@ This will:
    - Classification accuracy for $A = \{x : f(x) > 0.5\}$
    - Query points selected by the algorithm
 
-### Example Output
+#### Example Output
 
 The example produces:
 
@@ -115,6 +133,24 @@ The example produces:
    - **Right**: Classification correctness (TP/TN/FP/FN)
 
 All query points are shown as black dots.
+
+### High-Dimensional Example
+
+Example with `d=20` demonstrating gradient descent optimization for candidate points.
+
+#### Running the Example
+
+```bash
+cd examples
+python example_highdim.py
+```
+
+This will:
+1. Run multiple trials comparing with and without gradient optimization
+2. Show accuracy improvements from gradient-based candidate optimization
+3. Generate comparison visualizations
+
+The gradient descent optimization is particularly beneficial in high dimensions where random sampling becomes less effective.
 
 ## API Reference
 
@@ -137,6 +173,11 @@ learner = ActiveLearner(
 
 **Methods:**
 - `run(n_iterations, ...)`: Run the active learning loop
+  - New parameters for gradient optimization:
+    - `optimize_candidates` (bool): Enable gradient descent optimization (default: False)
+    - `gd_steps` (int): Number of gradient descent steps (default: 10)
+    - `gd_lr` (float): Learning rate for optimization (default: 0.1)
+    - `gd_top_k_fraction` (float): Fraction of top candidates to optimize (default: 0.1)
 - `predict(X)`: Get predictions for new points
 - `query_oracle(x, n_queries)`: Query oracle at a specific point
 
@@ -156,6 +197,7 @@ ensemble = EnsembleModel(
 **Methods:**
 - `train_step(X, y, n_epochs)`: Train on data
 - `predict_proba(X)`: Get probability predictions
+- `predict_proba_with_grad(X)`: Get predictions with gradient support (for optimization)
 - `predict_mean(X)`: Get mean prediction
 
 ### Acquisition Functions
@@ -167,6 +209,20 @@ Compute BALD (Bayesian Active Learning by Disagreement) scores.
 - **Input**: Tensor of shape `(n_models, n_points)` with predictions
 - **Output**: Tensor of shape `(n_points,)` with acquisition scores
 - **Higher scores** = more informative points
+
+#### `optimize_candidates_gd(candidates, ensemble, acquisition_fn, ...)`
+
+Optimize candidate points using gradient descent on the acquisition function.
+
+- **Input**: 
+  - `candidates`: Tensor of initial candidate points
+  - `ensemble`: Trained EnsembleModel
+  - `acquisition_fn`: Acquisition function to maximize
+  - `n_steps`: Number of gradient descent steps (default: 10)
+  - `learning_rate`: Learning rate (default: 0.1)
+  - `top_k_fraction`: Fraction of candidates to optimize (default: 0.1)
+- **Output**: Tensor of optimized candidates
+- **Use case**: Improves performance in high dimensions
 
 #### `uncertainty_acquisition(predictions)`
 
@@ -209,6 +265,41 @@ Where:
 - The ensemble is uncertain (epistemic uncertainty)
 - But individual models are confident (low aleatoric uncertainty)
 - These are the most informative points to query
+
+## Gradient Descent Optimization
+
+### Overview
+
+For high-dimensional problems (e.g., `d > 10`), random sampling of candidate points becomes less effective. The gradient descent optimization improves candidate selection by:
+
+1. **Starting with random candidates**: Sample points uniformly from the simplex
+2. **Selecting top candidates**: Choose the top-k candidates with highest initial acquisition scores
+3. **Gradient optimization**: Use gradient descent to optimize these candidates to maximize the acquisition function
+4. **Simplex projection**: After each gradient step, project points back onto the simplex to maintain constraints
+
+### Benefits
+
+- **High dimensions**: Most effective when `d > 10` where random sampling struggles
+- **Better exploration**: Finds regions with higher uncertainty more efficiently
+- **Configurable**: Can adjust optimization steps, learning rate, and fraction of candidates to optimize
+
+### Usage
+
+```python
+learner.run(
+    n_iterations=50,
+    optimize_candidates=True,  # Enable optimization
+    gd_steps=20,              # More steps for higher dimensions
+    gd_lr=0.05,               # Lower learning rate for stability
+    gd_top_k_fraction=0.2     # Optimize top 20% of candidates
+)
+```
+
+### When to Use
+
+- **Enable for d ≥ 10**: Particularly beneficial in high dimensions
+- **Disable for d < 5**: Little benefit in low dimensions, adds computation time
+- **Moderate d (5-10)**: Optional, test to see if it helps your specific problem
 
 ## Technical Details
 
