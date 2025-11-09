@@ -158,14 +158,18 @@ class ActiveLearner:
             'acquisition_scores': all_scores
         }
     
-    def predict(self, X):
+    def predict(self, X, deterministic=True):
         """
         Predict probabilities for given points.
         
         Args:
             X: torch.Tensor of shape (n_points, d)
+            deterministic: If True, use eval mode without dropout. If False, use train mode with dropout.
             
         Returns:
             Mean predictions of shape (n_points,)
         """
-        return self.ensemble.predict_mean(X).cpu().numpy()
+        if deterministic:
+            return self.ensemble.predict_deterministic(X).cpu().numpy()
+        else:
+            return self.ensemble.predict_mean(X).cpu().numpy()
