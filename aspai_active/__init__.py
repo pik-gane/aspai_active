@@ -7,7 +7,7 @@ on the probability simplex.
 """
 
 from .model import EnsembleModel
-from .acquisition import bald_acquisition
+from .acquisition import bald_acquisition, optimize_candidates_gd
 from .active_learner import ActiveLearner
 from .utils import sample_simplex, project_to_simplex, grid_simplex
 
@@ -15,6 +15,7 @@ __version__ = "0.1.0"
 __all__ = [
     "EnsembleModel",
     "bald_acquisition",
+    "optimize_candidates_gd",
     "ActiveLearner",
     "sample_simplex",
     "project_to_simplex",

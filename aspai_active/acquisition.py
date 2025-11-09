@@ -4,6 +4,7 @@ Acquisition functions for active learning.
 
 import torch
 import numpy as np
+from .utils import project_to_simplex
 
 
 def bald_acquisition(predictions):
@@ -68,3 +69,67 @@ def variance_acquisition(predictions):
         torch.Tensor of shape (n_points,) with variance scores
     """
     return predictions.var(dim=0)
+
+
+def optimize_candidates_gd(candidates, ensemble, acquisition_fn, 
+                           n_steps=10, learning_rate=0.1, top_k_fraction=0.1):
+    """
+    Optimize candidate points using gradient descent on the acquisition function.
+    
+    This improves candidate point initialization in high dimensions by using
+    gradient information to move candidates toward regions with high acquisition values.
+    
+    Args:
+        candidates: torch.Tensor of shape (n_candidates, d) - initial candidate points
+        ensemble: EnsembleModel - the trained ensemble for computing acquisition scores
+        acquisition_fn: callable - acquisition function (e.g., bald_acquisition)
+        n_steps: int - number of gradient descent steps (default: 10)
+        learning_rate: float - learning rate for gradient descent (default: 0.1)
+        top_k_fraction: float - fraction of candidates to optimize (default: 0.1)
+        
+    Returns:
+        torch.Tensor of shape (n_candidates, d) - optimized candidate points
+    """
+    if n_steps <= 0 or top_k_fraction <= 0:
+        return candidates
+    
+    # Compute initial acquisition scores to select top candidates
+    with torch.no_grad():
+        predictions = ensemble.predict_proba(candidates, n_samples=1)
+        initial_scores = acquisition_fn(predictions)
+    
+    # Select top-k candidates to optimize
+    n_optimize = max(1, int(len(candidates) * top_k_fraction))
+    _, top_indices = torch.topk(initial_scores, n_optimize)
+    
+    # Create optimizable copies of top candidates
+    optimized_candidates = candidates[top_indices].clone().detach().to(ensemble.device)
+    optimized_candidates.requires_grad = True
+    
+    # Gradient descent optimization using SGD for better simplex compatibility
+    optimizer = torch.optim.SGD([optimized_candidates], lr=learning_rate)
+    
+    for step in range(n_steps):
+        optimizer.zero_grad()
+        
+        # Compute acquisition scores (negative because we want to maximize)
+        # Use predict_proba_with_grad to enable gradient computation
+        predictions = ensemble.predict_proba_with_grad(optimized_candidates, n_samples=1)
+        scores = acquisition_fn(predictions)
+        loss = -scores.sum()  # Negative to maximize; sum to optimize each point independently
+        
+        # Backward pass
+        loss.backward()
+        
+        # Gradient descent step
+        optimizer.step()
+        
+        # Project back onto the simplex
+        with torch.no_grad():
+            optimized_candidates.data = project_to_simplex(optimized_candidates.data)
+    
+    # Replace top candidates with optimized versions
+    result = candidates.clone()
+    result[top_indices] = optimized_candidates.detach().cpu()
+    
+    return result

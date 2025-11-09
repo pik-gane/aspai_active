@@ -131,6 +131,33 @@ class EnsembleModel:
         
         return torch.stack(predictions)
     
+    def predict_proba_with_grad(self, x, n_samples=1):
+        """
+        Predict probabilities using the ensemble with gradient support.
+        
+        This version enables gradients through the network for optimization purposes.
+        
+        Args:
+            x: Input tensor of shape (n_points, input_dim)
+            n_samples: Number of stochastic forward passes per model (for dropout)
+            
+        Returns:
+            predictions: torch.Tensor of shape (n_models * n_samples, n_points)
+                        Each row is predictions from one model/sample
+        """
+        x = x.to(self.device)
+        predictions = []
+        
+        for model in self.models:
+            model.eval()  # Use eval mode for deterministic predictions during optimization
+            
+            for _ in range(n_samples):
+                logits = model(x)
+                probs = torch.sigmoid(logits).squeeze(-1)
+                predictions.append(probs)
+        
+        return torch.stack(predictions)
+    
     def predict_mean(self, x):
         """
         Predict mean probability across the ensemble.

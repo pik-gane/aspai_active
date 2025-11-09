@@ -5,7 +5,7 @@ Active learning loop implementation.
 import torch
 import numpy as np
 from .model import EnsembleModel
-from .acquisition import bald_acquisition
+from .acquisition import bald_acquisition, optimize_candidates_gd
 from .utils import sample_simplex
 
 
@@ -61,18 +61,35 @@ class ActiveLearner:
         responses = [self.oracle(x) for _ in range(n_queries)]
         return np.mean(responses)
     
-    def select_next_point(self, candidate_points, acquisition_fn=bald_acquisition):
+    def select_next_point(self, candidate_points, acquisition_fn=bald_acquisition,
+                         optimize_candidates=False, gd_steps=10, gd_lr=0.1, 
+                         gd_top_k_fraction=0.1):
         """
         Select the next point to query using the acquisition function.
         
         Args:
             candidate_points: torch.Tensor of shape (n_candidates, d)
             acquisition_fn: Acquisition function to use
+            optimize_candidates: Whether to use gradient descent to optimize candidates
+            gd_steps: Number of gradient descent steps for optimization
+            gd_lr: Learning rate for gradient descent
+            gd_top_k_fraction: Fraction of top candidates to optimize
             
         Returns:
             Selected point (torch.Tensor of shape (d,))
             Acquisition scores for all candidates
         """
+        # Optionally optimize candidates using gradient descent
+        if optimize_candidates and gd_steps > 0:
+            candidate_points = optimize_candidates_gd(
+                candidate_points, 
+                self.ensemble, 
+                acquisition_fn,
+                n_steps=gd_steps,
+                learning_rate=gd_lr,
+                top_k_fraction=gd_top_k_fraction
+            )
+        
         # Get predictions from ensemble
         predictions = self.ensemble.predict_proba(candidate_points, n_samples=1)
         
@@ -86,7 +103,9 @@ class ActiveLearner:
         return selected_point, scores
     
     def run(self, n_iterations, n_candidates=1000, n_initial=10, 
-            n_oracle_queries=1, retrain_epochs=50, verbose=True):
+            n_oracle_queries=1, retrain_epochs=50, verbose=True,
+            optimize_candidates=False, gd_steps=10, gd_lr=0.1, 
+            gd_top_k_fraction=0.1):
         """
         Run the active learning loop.
         
@@ -97,6 +116,10 @@ class ActiveLearner:
             n_oracle_queries: Number of times to query oracle per point
             retrain_epochs: Number of epochs to train after each new point
             verbose: Whether to print progress
+            optimize_candidates: Whether to use gradient descent to optimize candidates
+            gd_steps: Number of gradient descent steps for candidate optimization
+            gd_lr: Learning rate for gradient descent optimization
+            gd_top_k_fraction: Fraction of top candidates to optimize with GD
             
         Returns:
             Dictionary with results
@@ -131,8 +154,14 @@ class ActiveLearner:
             # Generate candidate points
             candidates = sample_simplex(n_candidates, self.d, device=self.device)
             
-            # Select next point
-            next_point, scores = self.select_next_point(candidates)
+            # Select next point (with optional gradient descent optimization)
+            next_point, scores = self.select_next_point(
+                candidates, 
+                optimize_candidates=optimize_candidates,
+                gd_steps=gd_steps,
+                gd_lr=gd_lr,
+                gd_top_k_fraction=gd_top_k_fraction
+            )
             all_scores.append(scores.cpu().numpy())
             
             # Query oracle
