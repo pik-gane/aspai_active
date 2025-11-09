@@ -114,7 +114,7 @@ class EnsembleModel:
             n_samples: Number of stochastic forward passes per model (for dropout)
             
         Returns:
-            predictions: numpy.ndarray of shape (n_models * n_samples, n_points)
+            predictions: torch.Tensor of shape (n_models * n_samples, n_points)
                         Each row is predictions from one model/sample
         """
         x = x.to(self.device)
@@ -127,9 +127,9 @@ class EnsembleModel:
                 for _ in range(n_samples):
                     logits = model(x)
                     probs = torch.sigmoid(logits).squeeze(-1)
-                    predictions.append(probs.cpu().numpy())
+                    predictions.append(probs.cpu())
         
-        return torch.tensor(predictions)
+        return torch.stack(predictions)
     
     def predict_mean(self, x):
         """

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Active Learning Results</title>
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+        }
+        .description {
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.6;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Active Learning on 3D Probability Simplex</h1>
+        <div class="description">
+            <p><strong>Problem:</strong> Learn where f(x) > 0.5 on the probability simplex, where f is the average of 5 smooth step functions.</p>
+            <p><strong>Method:</strong> Active learning with BALD (Bayesian Active Learning by Disagreement) using an ensemble of 5 neural networks.</p>
+            <p><strong>Results:</strong> After 50 queries, achieved 63.14% classification accuracy.</p>
+        </div>
+        <img src="example_results.png" alt="Active Learning Results">
+        <div class="description">
+            <h3>Visualization Panels:</h3>
+            <ul>
+                <li><strong>Left:</strong> True function f(x) values on the simplex</li>
+                <li><strong>Middle:</strong> Learned function estimates from the neural network ensemble</li>
+                <li><strong>Right:</strong> Classification correctness (TP=green, TN=yellow, FP=orange, FN=red)</li>
+            </ul>
+            <p>Black dots represent the 50 query points selected by BALD acquisition.</p>
+        </div>
+    </div>
+</body>
+</html>
